@@ -108,7 +108,7 @@ class ImgBrowser(Container):
         self.viewer.layers.events.removed.connect(self.check_empty_layerlist)
 
     def open_zarr_plate(self):
-        if self._zarr_selector._source_selector.value == "File":
+        if self._zarr_selector._source_selector.value in ["File", "S3"]:
             self.plate_store = self._zarr_selector.url
         else:
             self.plate_store = fractal_fsspec_store(
@@ -338,7 +338,7 @@ class ImgBrowser(Container):
             )
             # Create the Zarr object
             zarr_url = f"{str(self._zarr_selector.url)}/{well[0]}/{well[1]}/{self.default_zarr_image_subgroup}"
-            if self._zarr_selector._source_selector.value == "File":
+            if self._zarr_selector._source_selector.value in ["File", "S3"]:
                 store = zarr_url
             else:
                 store = fractal_fsspec_store(

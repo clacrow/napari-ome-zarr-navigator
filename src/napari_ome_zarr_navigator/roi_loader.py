@@ -452,7 +452,7 @@ class ROILoaderImage(ROILoader):
             self.reset_widgets()
             return
 
-        if source == "File":
+        if source in ["File", "S3"]:
             store = self.zarr_url
         else:
             store = fractal_fsspec_store(self.zarr_url, fractal_token=token)

@@ -97,7 +97,7 @@ class ZarrSelector(Container):
         # Source selector
         self._source_selector = RadioButtons(
             label="Source",
-            choices=["File", "HTTP"],
+            choices=["File", "HTTP", "S3"],
             orientation="horizontal",
             value="File",
         )
@@ -105,12 +105,14 @@ class ZarrSelector(Container):
         # internal state
         self._last_file_url = None
         self._last_http_url = None
+        self._last_s3_url = None
         self._last_token = None
 
         # Inputs
         self._file_picker = FileEdit(label="Zarr file", mode=file_mode)
         self._http_url = LineEdit(label="Zarr URL")
         self._http_token = LineEdit(label="Token")
+        self._s3_uri = LineEdit(label="S3 URI")
 
         # Mask token + add eye action (always white icons)
         le: QLineEdit = self._http_token.native
@@ -133,10 +135,16 @@ class ZarrSelector(Container):
 
         # Stack & layout
         self._stack = Container(
-            widgets=[self._file_picker, self._http_url, self._http_token]
+            widgets=[
+                self._file_picker,
+                self._http_url,
+                self._http_token,
+                self._s3_uri,
+            ]
         )
         self._http_url.hide()
         self._http_token.hide()
+        self._s3_uri.hide()
 
         self._main = Container(
             widgets=[Label(value=label), self._source_selector, self._stack]
@@ -154,6 +162,7 @@ class ZarrSelector(Container):
         self._file_picker.changed.connect(self._emit_changed)
         self._http_url.changed.connect(self._restart_timer)
         self._http_token.changed.connect(self._restart_timer)
+        self._s3_uri.changed.connect(self._restart_timer)
 
         self._callbacks = []
 
@@ -162,10 +171,17 @@ class ZarrSelector(Container):
             self._file_picker.show()
             self._http_url.hide()
             self._http_token.hide()
-        else:
+            self._s3_uri.hide()
+        elif value == "HTTP":
             self._file_picker.hide()
             self._http_url.show()
             self._http_token.show()
+            self._s3_uri.hide()
+        else:  # S3
+            self._file_picker.hide()
+            self._http_url.hide()
+            self._http_token.hide()
+            self._s3_uri.show()
         self._emit_source_changed()
 
     def _restart_timer(self, *args):
@@ -179,18 +195,24 @@ class ZarrSelector(Container):
         curr_file = str(self._file_picker.value)
         curr_http = self._http_url.value.strip()
         curr_token = self._http_token.value.strip()
+        curr_s3 = self._s3_uri.value.strip()
 
-        if (self.source == "File" and curr_file != self._last_file_url) or (
-            self.source == "HTTP"
-            and (
-                curr_http != self._last_http_url
-                or curr_token != self._last_token
+        if (
+            (self.source == "File" and curr_file != self._last_file_url)
+            or (
+                self.source == "HTTP"
+                and (
+                    curr_http != self._last_http_url
+                    or curr_token != self._last_token
+                )
             )
+            or (self.source == "S3" and curr_s3 != self._last_s3_url)
         ):
             # Update state
             self._last_file_url = curr_file
             self._last_http_url = curr_http
             self._last_token = curr_token
+            self._last_s3_url = curr_s3
 
             for cb in self._callbacks:
                 cb()
@@ -210,6 +232,7 @@ class ZarrSelector(Container):
         self._file_picker.value = zarr_url
         self._http_url.value = zarr_url
         self._http_token.value = token or ""
+        self._s3_uri.value = zarr_url
 
     @property
     def source(self):
@@ -219,6 +242,8 @@ class ZarrSelector(Container):
     def url(self) -> str:
         if self.source == "File":
             return str(self._file_picker.value)
+        elif self.source == "S3":
+            return self._s3_uri.value.strip()
         else:
             return self._http_url.value.strip()
 
