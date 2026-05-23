@@ -97,9 +97,9 @@ class ZarrSelector(Container):
         # Source selector
         self._source_selector = RadioButtons(
             label="Source",
-            choices=["File", "HTTP", "S3"],
+            choices=["S3", "File", "HTTP"],
             orientation="horizontal",
-            value="File",
+            value="S3",
         )
 
         # internal state
